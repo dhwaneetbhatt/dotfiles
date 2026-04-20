@@ -24,12 +24,13 @@ return {
     },
   },
 
-  -- Use google-java-format for Java files
+  -- Use google-java-format for Java files and prettier for JSON
   {
     "mason-org/mason.nvim",
     opts = {
       ensure_installed = {
         "google-java-format",
+        "prettier",
       },
     },
   },
@@ -38,6 +39,7 @@ return {
     opts = {
       formatters_by_ft = {
         java = { "google-java-format" },
+        json = { "prettier" },
       },
     },
   },

@@ -6,6 +6,8 @@ return {
         sources = {
           explorer = {
             hidden = true,
+            ignored = true,
+            follow_file = true,
           },
         },
       },
