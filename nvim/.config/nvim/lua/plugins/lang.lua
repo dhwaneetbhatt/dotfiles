@@ -43,4 +43,17 @@ return {
       },
     },
   },
+
+  -- Disable jdtls's built-in formatter so google-java-format (via conform) is
+  -- the only formatter, regardless of how formatting is triggered.
+  {
+    "mfussenegger/nvim-jdtls",
+    opts = {
+      settings = {
+        java = {
+          format = { enabled = false },
+        },
+      },
+    },
+  },
 }
