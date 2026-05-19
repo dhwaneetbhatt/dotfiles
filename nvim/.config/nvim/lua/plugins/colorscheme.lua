@@ -13,6 +13,15 @@ return {
     },
   },
 
+  {
+    "scottmckendry/cyberdream.nvim",
+    name = "cyberdream",
+    priority = 1001,
+    opts = {
+      variant = "auto", -- follows vim.o.background (light/dark)
+    },
+  },
+
   -- Auto-switch based on macOS system appearance
   {
     "f-person/auto-dark-mode.nvim",
@@ -32,7 +41,7 @@ return {
   {
     "LazyVim/LazyVim",
     opts = {
-      colorscheme = "catppuccin",
+      colorscheme = "cyberdream",
     },
   },
 }
