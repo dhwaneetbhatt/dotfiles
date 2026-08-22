@@ -102,8 +102,21 @@ autoload -U add-zsh-hook
 alias zshconfig="nvim ~/.zshrc"
 alias reload="source ~/.zshrc"
 
+# Pick a worktree (workmux) and switch to (or create) its window
+alias wg='workmux-picker'
+
+git() {
+  if [ "${1:-}" = worktree ] && [ "${2:-}" = add ]; then
+    shift 2
+    command git sprout add "$@"
+  else
+    command git "$@"
+  fi
+}
+
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
 # Load local secrets (gitignored)
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
+[ -f ~/.claude-env ] && source ~/.claude-env

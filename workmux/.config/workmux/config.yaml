@@ -1,0 +1,20 @@
+# Nest worktrees inside the repo itself (default is a sibling directory,
+# `<project>__worktrees`, which falls outside Claude Code's permission scope
+# since that scope is tied to the project directory).
+worktree_dir: .worktrees
+
+# Each worktree gets its own tmux session (switchable independently, e.g. via
+# `tmux choose-tree` or its own Ghostty tab) instead of just another window
+# added to whatever session you're currently in.
+mode: session
+
+# Shell pane first (no `command` — plain interactive shell. Launching `claude`
+# directly as a pane's command breaks its login persistence, confirmed
+# empirically), nvim pane second on the worktree.
+panes:
+  - name: shell
+    focus: true
+  - name: nvim
+    command: nvim .
+    split: vertical
+nerdfont: true

@@ -1,0 +1,42 @@
+#!/bin/zsh
+# workmux-picker
+# Fuzzy-picks a worktree (workmux's own `list` is a static table, not
+# interactive) and opens or creates it. `workmux add -o` both creates a new
+# worktree and opens an existing one in a single call, so no branching logic
+# is needed here for "existing vs new" the way the old wt-based picker had.
+#
+# Exists mainly to fix PATH: the tmux popup that runs this spawns a
+# non-interactive shell, which skips .zshrc, so neither /opt/homebrew/bin
+# (workmux, fzf) nor ~/.local/bin are guaranteed to be there. Also keeps the
+# popup open on failure instead of vanishing silently (`-E` auto-closes tmux
+# popups the instant the command exits).
+export PATH="/opt/homebrew/bin:$HOME/.local/bin:$PATH"
+
+log="$HOME/.local/share/workmux-picker.log"
+mkdir -p "${log:h}"
+{
+  echo "--- $(/bin/date) pwd=$PWD TMUX=${TMUX:-<unset>} ---"
+  echo "PATH=$PATH"
+} >> "$log"
+
+target=$(workmux list --json | jq -r '.[].handle' | fzf --print-query --prompt='worktree> ' | tail -1)
+echo "target=[$target]" >> "$log"
+
+if [[ -z "$target" ]]; then
+  echo "no target selected, exiting" >> "$log"
+  exit 0
+fi
+
+out=$(workmux add -o "$target" 2>&1)
+rc=$?
+echo "workmux add -o \"$target\" -> exit $rc" >> "$log"
+echo "$out" >> "$log"
+echo "$out"
+
+if [[ $rc -ne 0 ]]; then
+  echo
+  echo "workmux failed (exit $rc) — press any key to close"
+  read -k1 -s
+fi
+
+exit $rc
