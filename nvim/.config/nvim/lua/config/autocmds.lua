@@ -6,3 +6,13 @@
 --
 -- Or remove existing autocmds by their group name (which is prefixed with `lazyvim_` for the defaults)
 -- e.g. vim.api.nvim_del_augroup_by_name("lazyvim_wrap_spell")
+
+-- Re-create LazyVim's wrap_spell autocmd without the spell part — keeps wrap
+-- for text/markdown/gitcommit filetypes, drops the default spellcheck.
+vim.api.nvim_create_autocmd("FileType", {
+  group = vim.api.nvim_create_augroup("lazyvim_wrap_spell", { clear = true }),
+  pattern = { "text", "plaintex", "typst", "gitcommit", "markdown" },
+  callback = function()
+    vim.opt_local.wrap = true
+  end,
+})
