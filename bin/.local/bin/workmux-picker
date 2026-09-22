@@ -6,11 +6,16 @@
 # is needed here for "existing vs new" the way the old wt-based picker had.
 #
 # Exists mainly to fix PATH: the tmux popup that runs this spawns a
-# non-interactive shell, which skips .zshrc, so neither /opt/homebrew/bin
+# non-interactive shell, which skips .zshrc, so neither Homebrew's bin directory
 # (workmux, fzf) nor ~/.local/bin are guaranteed to be there. Also keeps the
 # popup open on failure instead of vanishing silently (`-E` auto-closes tmux
 # popups the instant the command exits).
-export PATH="/opt/homebrew/bin:$HOME/.local/bin:$PATH"
+if [[ -x /opt/homebrew/bin/brew ]]; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [[ -x /usr/local/bin/brew ]]; then
+  eval "$(/usr/local/bin/brew shellenv)"
+fi
+export PATH="$HOME/.local/bin:$PATH"
 
 log="$HOME/.local/share/workmux-picker.log"
 mkdir -p "${log:h}"

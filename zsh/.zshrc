@@ -1,6 +1,6 @@
 # OPENSPEC:START
 # OpenSpec shell completions configuration
-fpath=("/Users/dhwaneet.bhatt/.oh-my-zsh/custom/completions" $fpath)
+fpath=("$HOME/.oh-my-zsh/custom/completions" $fpath)
 autoload -Uz compinit
 compinit
 # OPENSPEC:END
@@ -50,7 +50,10 @@ source_if_exists "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting/zsh-syntax-highlig
 # --- 4. LAZY-LOAD EXTERNAL TOOLS ---
 
 # Load ASDF fully at startup (Slower startup, but Node always works)
-[[ -f /opt/homebrew/opt/asdf/libexec/asdf.sh ]] && . /opt/homebrew/opt/asdf/libexec/asdf.sh
+if command -v brew >/dev/null 2>&1; then
+  asdf_script="$(brew --prefix asdf 2>/dev/null)/libexec/asdf.sh"
+  [[ -f "$asdf_script" ]] && . "$asdf_script"
+fi
 
 # FZF Integration (Fixed for Ctrl+R)
 # Instead of a function, we source the shell integration directly.
@@ -59,7 +62,7 @@ export FZF_DEFAULT_COMMAND='fd --type f'
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 if [[ -f ~/.fzf.zsh ]]; then
   source ~/.fzf.zsh
-elif [[ -x /opt/homebrew/bin/fzf ]]; then
+elif command -v fzf >/dev/null 2>&1; then
   # If ~/.fzf.zsh doesn't exist, use the modern brew-style init
   eval "$(fzf --zsh)"
 fi
@@ -68,12 +71,12 @@ fi
 # Use typeset -U to ensure PATH remains unique (no duplicates)
 typeset -U path PATH
 path=(
-  /opt/homebrew/bin
-  /opt/homebrew/sbin
-  /opt/homebrew/opt/curl/bin
-  /opt/homebrew/opt/unzip/bin
+  ${HOMEBREW_PREFIX:+$HOMEBREW_PREFIX/bin}
+  ${HOMEBREW_PREFIX:+$HOMEBREW_PREFIX/sbin}
+  ${HOMEBREW_PREFIX:+$HOMEBREW_PREFIX/opt/curl/bin}
+  ${HOMEBREW_PREFIX:+$HOMEBREW_PREFIX/opt/unzip/bin}
   $HOME/.asdf/shims
-  /Users/dhwaneet.bhatt/.local/bin
+  $HOME/.local/bin
   $path
 )
 
@@ -105,8 +108,11 @@ alias reload="source ~/.zshrc"
 # Pick a worktree (workmux) and switch to (or create) its window
 alias wg='workmux-picker'
 
+# Launch Kiro CLI in v3 mode (opt-in flag on the 2.22.0 binary)
+alias kiro='kiro-cli --v3'
+
 git() {
-  if [ "${1:-}" = worktree ] && [ "${2:-}" = add ]; then
+  if command -v git-sprout >/dev/null 2>&1 && [ "${1:-}" = worktree ] && [ "${2:-}" = add ]; then
     shift 2
     command git sprout add "$@"
   else

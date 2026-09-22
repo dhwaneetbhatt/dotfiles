@@ -1,0 +1,3 @@
+# Machine-local environment variables and secrets belong here.
+# This file is intentionally not linked or tracked as ~/.zshrc.local.
+# export EXAMPLE_TOKEN="replace-me"

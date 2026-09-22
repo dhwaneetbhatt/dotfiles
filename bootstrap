@@ -1,0 +1,117 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+install_optional=false
+dry_run=false
+
+usage() {
+  cat <<'EOF'
+Usage: ./bootstrap [--optional] [--dry-run]
+
+Installs base dependencies, links dotfiles with Stow, and bootstraps shell and
+editor tooling. --optional also installs Brewfile.optional. --dry-run prints
+the commands that would change the machine.
+EOF
+}
+
+run() {
+  if "$dry_run"; then
+    printf '+ '
+    printf '%q ' "$@"
+    printf '\n'
+  else
+    "$@"
+  fi
+}
+
+while (($#)); do
+  case "$1" in
+    --optional) install_optional=true ;;
+    --dry-run) dry_run=true ;;
+    -h|--help) usage; exit 0 ;;
+    *) usage >&2; exit 1 ;;
+  esac
+  shift
+done
+
+if [[ "$(uname -s)" != "Darwin" ]]; then
+  printf 'This bootstrap currently supports macOS only.\n' >&2
+  exit 1
+fi
+
+if ! xcode-select -p >/dev/null 2>&1; then
+  if "$dry_run"; then
+    printf '+ xcode-select --install\n'
+  else
+    xcode-select --install
+    printf 'Finish the Command Line Tools installation, then rerun bootstrap.\n' >&2
+  fi
+  exit 1
+fi
+
+if [[ -x /opt/homebrew/bin/brew ]]; then
+  brew_bin=/opt/homebrew/bin/brew
+elif [[ -x /usr/local/bin/brew ]]; then
+  brew_bin=/usr/local/bin/brew
+else
+  if "$dry_run"; then
+    printf '+ install Homebrew from https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh\n'
+    exit 0
+  fi
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  if [[ -x /opt/homebrew/bin/brew ]]; then
+    brew_bin=/opt/homebrew/bin/brew
+  else
+    brew_bin=/usr/local/bin/brew
+  fi
+fi
+
+eval "$("$brew_bin" shellenv)"
+
+run brew bundle --file "$repo_root/Brewfile"
+if "$install_optional"; then
+  run brew bundle --file "$repo_root/Brewfile.optional"
+fi
+
+run mkdir -p "$HOME/.config" "$HOME/.local/bin" "$HOME/.ssh"
+run chmod 700 "$HOME/.ssh"
+
+for package in asdf bin git nvim ssh tmux vim workmux zsh; do
+  if [[ "$package" == zsh ]]; then
+    run stow --restow --target "$HOME" --dir "$repo_root" --ignore='^\.zshrc\.local$' "$package"
+  else
+    run stow --restow --target "$HOME" --dir "$repo_root" "$package"
+  fi
+done
+
+run git config --global core.excludesfile "$HOME/.config/git/ignore"
+
+clone_if_missing() {
+  local repository=$1 destination=$2
+  if [[ ! -d "$destination/.git" ]]; then
+    run git clone --depth=1 "$repository" "$destination"
+  fi
+}
+
+clone_if_missing https://github.com/ohmyzsh/ohmyzsh.git "$HOME/.oh-my-zsh"
+clone_if_missing https://github.com/romkatv/powerlevel10k.git "$HOME/.oh-my-zsh/custom/themes/powerlevel10k"
+clone_if_missing https://github.com/zsh-users/zsh-autosuggestions.git "$HOME/.oh-my-zsh/custom/plugins/zsh-autosuggestions"
+clone_if_missing https://github.com/zsh-users/zsh-syntax-highlighting.git "$HOME/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting"
+clone_if_missing https://github.com/tmux-plugins/tpm.git "$HOME/.tmux/plugins/tpm"
+
+if [[ -x "$HOME/.tmux/plugins/tpm/bin/install_plugins" ]]; then
+  run "$HOME/.tmux/plugins/tpm/bin/install_plugins"
+fi
+
+for plugin in bun golang java maven nodejs uv yarn; do
+  if ! asdf plugin list | command grep -qx "$plugin"; then
+    run asdf plugin add "$plugin"
+  fi
+done
+run asdf install
+
+# LazyVim installs its configured Mason tools during startup.
+run nvim --headless '+Lazy! sync' +qa
+
+printf 'Bootstrap complete. Configure SSH keys, GitHub authentication, and ~/.zshrc.local separately.\n'
