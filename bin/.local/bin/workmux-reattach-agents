@@ -1,0 +1,118 @@
+#!/bin/zsh
+# workmux-reattach-agents
+# -----------------------------------------------------------------------------
+# Re-register every running agent against its REAL tmux pane.
+#
+# Why this exists:
+#   workmux tracks each agent (codex/claude/kiro-cli/...) by writing a per-pane
+#   state file. The pane is identified from the $TMUX_PANE env var that the
+#   agent process inherited at launch. After restoring tmux following a laptop
+#   restart (tmux-resurrect / continuum / `workmux resurrect`), panes are
+#   RESPAWNED and the agent inherits a stale $TMUX_PANE from whatever spawned
+#   it -- often a different pane. Every status hook from that agent then writes
+#   to the wrong pane's state file, so the agent collides with another one and
+#   never appears as its own entry in the sidebar / `workmux status`.
+#
+# What this does:
+#   Walks all tmux panes, finds those whose foreground command is a known
+#   agent, and runs `workmux register-agent` with $TMUX_PANE forced to that
+#   pane's actual id. register-agent derives workdir/pid/kind/session from the
+#   pane itself, so this reconstructs one correct state file per real pane.
+#   Status (working/done/...) stays whatever it was until the agent's next
+#   hook fires; the agent is visible immediately regardless.
+#
+# Usage:
+#   workmux-reattach-agents            # fix all agent panes
+#   workmux-reattach-agents --dry-run  # show what would be done, change nothing
+#   workmux-reattach-agents -v         # verbose (also list skipped panes)
+#   AGENT_CMDS="codex claude" workmux-reattach-agents   # override agent list
+#
+# Safe to run anytime; re-registering an already-correct pane is a no-op write.
+# -----------------------------------------------------------------------------
+set -euo pipefail
+
+# --- PATH fix: a tmux popup / non-interactive shell skips .zshrc, so Homebrew's
+#     bin (where `workmux` lives) and ~/.local/bin may be missing. Mirror the
+#     logic in workmux-picker.
+if [[ -x /opt/homebrew/bin/brew ]]; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [[ -x /usr/local/bin/brew ]]; then
+  eval "$(/usr/local/bin/brew shellenv)"
+fi
+export PATH="$HOME/.local/bin:$PATH"
+
+dry_run=0
+verbose=0
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run|-n) dry_run=1 ;;
+    --verbose|-v) verbose=1 ;;
+    --help|-h)
+      sed -n '2,33p' "$0" | sed 's/^# \{0,1\}//'
+      exit 0
+      ;;
+    *)
+      print -u2 "unknown argument: $arg (try --help)"
+      exit 2
+      ;;
+  esac
+done
+
+if ! command -v tmux >/dev/null 2>&1; then
+  print -u2 "tmux not found on PATH"; exit 1
+fi
+if ! command -v workmux >/dev/null 2>&1; then
+  print -u2 "workmux not found on PATH"; exit 1
+fi
+if [[ -z "${TMUX:-}" ]] && ! tmux list-sessions >/dev/null 2>&1; then
+  print -u2 "no tmux server running"; exit 1
+fi
+
+# Agent foreground commands to match. Override via $AGENT_CMDS (space list).
+# These are matched against tmux's #{pane_current_command}, i.e. the basename
+# of the pane's foreground process, so entries are plain command names.
+typeset -a agents
+if [[ -n "${AGENT_CMDS:-}" ]]; then
+  agents=(${=AGENT_CMDS})
+else
+  agents=(codex claude kiro-cli kiro gemini aider opencode amp)
+fi
+
+is_agent() {
+  local cmd="$1" a
+  for a in $agents; do
+    [[ "$cmd" == "$a" ]] && return 0
+  done
+  return 1
+}
+
+fixed=0
+skipped=0
+
+# -F output is "pane_id<TAB>pane_current_command"; -a spans all sessions.
+tmux list-panes -a -F '#{pane_id}	#{pane_current_command}' | while IFS=$'\t' read -r pane cmd; do
+  if is_agent "$cmd"; then
+    if (( dry_run )); then
+      print -- "would re-register $cmd @ $pane"
+    else
+      if TMUX_PANE="$pane" workmux register-agent >/dev/null 2>&1; then
+        print -- "re-registered $cmd @ $pane"
+      else
+        print -u2 -- "FAILED to register $cmd @ $pane"
+        continue
+      fi
+    fi
+    (( ++fixed ))
+  else
+    (( ++skipped ))
+    (( verbose )) && print -- "skip $cmd @ $pane"
+  fi
+done
+
+print -- "---"
+if (( dry_run )); then
+  print -- "dry run: $fixed agent pane(s) would be re-registered, $skipped non-agent pane(s) skipped"
+else
+  print -- "re-registered $fixed agent pane(s), skipped $skipped non-agent pane(s)"
+  print -- "verify with: workmux status --all --json | jq -r '.agents[] | \"\\(.pane_id) \\(.agent_kind) \\(.session) \\(.status)\"'"
+fi
