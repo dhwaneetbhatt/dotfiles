@@ -1,33 +1,53 @@
 #!/bin/zsh
 # workmux-reattach-agents
 # -----------------------------------------------------------------------------
-# Re-register every running agent against its REAL tmux pane.
+# Reconcile workmux agent state files with the REAL tmux panes: prune phantom
+# agents and (re-)register live ones against their true pane.
 #
 # Why this exists:
 #   workmux tracks each agent (codex/claude/kiro-cli/...) by writing a per-pane
-#   state file. The pane is identified from the $TMUX_PANE env var that the
-#   agent process inherited at launch. After restoring tmux following a laptop
-#   restart (tmux-resurrect / continuum / `workmux resurrect`), panes are
-#   RESPAWNED and the agent inherits a stale $TMUX_PANE from whatever spawned
-#   it -- often a different pane. Every status hook from that agent then writes
-#   to the wrong pane's state file, so the agent collides with another one and
-#   never appears as its own entry in the sidebar / `workmux status`.
+#   state file, keyed on the $TMUX_PANE the agent inherited at launch. Two
+#   failure modes both stem from a stale $TMUX_PANE:
 #
-# What this does:
-#   Walks all tmux panes, finds those whose foreground command is a known
-#   agent, and runs `workmux register-agent` with $TMUX_PANE forced to that
-#   pane's actual id. register-agent derives workdir/pid/kind/session from the
-#   pane itself, so this reconstructs one correct state file per real pane.
+#   1. MISSING agents. After restoring tmux (tmux-resurrect / continuum /
+#      `workmux resurrect`), panes are respawned and an agent can inherit a
+#      $TMUX_PANE from a different pane. Its status hooks then write to the
+#      wrong pane's file, so it collides with another agent and never shows up
+#      as its own sidebar entry.
+#
+#   2. PHANTOM agents. The same stale $TMUX_PANE means an agent keeps writing
+#      status to a pane that is NOT itself -- often a pane whose own agent has
+#      since exited back to a shell. The sidebar then shows a "working" agent
+#      for a session that has no agent running (e.g. an ai_gateway entry when
+#      no codex is open there). Deleting the file alone does not stick: the
+#      mis-targeted agent rewrites it on its next hook, so pruning must run
+#      repeatedly to stay ahead -- see --watch.
+#
+# What a reconcile pass does:
+#   PRUNE phase -- remove state files (for THIS tmux instance) whose pane no
+#   longer exists, or whose pane's foreground command is no longer an agent
+#   (e.g. it is now `zsh`). That is the signature of a phantom.
+#   REGISTER phase -- for every pane whose foreground command IS an agent, run
+#   `workmux register-agent` with $TMUX_PANE forced to that pane's real id, so
+#   each live agent has exactly one correct state file.
+#
+#   register-agent derives workdir/pid/kind/session from the pane itself.
 #   Status (working/done/...) stays whatever it was until the agent's next
 #   hook fires; the agent is visible immediately regardless.
 #
 # Usage:
-#   workmux-reattach-agents            # fix all agent panes
-#   workmux-reattach-agents --dry-run  # show what would be done, change nothing
-#   workmux-reattach-agents -v         # verbose (also list skipped panes)
+#   workmux-reattach-agents            # one reconcile pass (prune + register)
+#   workmux-reattach-agents --dry-run  # show what would change, change nothing
+#   workmux-reattach-agents -v         # verbose (also list skipped panes/files)
+#   workmux-reattach-agents --no-prune # only register, never delete files
+#   workmux-reattach-agents --watch    # daemon: reconcile every $INTERVAL secs
+#                                      #   (default 15; guarded by a pidfile so
+#                                      #   only one watcher runs per instance)
 #   AGENT_CMDS="codex claude" workmux-reattach-agents   # override agent list
+#   INTERVAL=10 workmux-reattach-agents --watch         # override watch period
 #
-# Safe to run anytime; re-registering an already-correct pane is a no-op write.
+# Safe to run anytime and repeatedly; registering an already-correct pane is a
+# no-op write, and pruning only touches contradicted files for this instance.
 # -----------------------------------------------------------------------------
 set -euo pipefail
 
@@ -43,12 +63,16 @@ export PATH="$HOME/.local/bin:$PATH"
 
 dry_run=0
 verbose=0
+do_prune=1
+watch=0
 for arg in "$@"; do
   case "$arg" in
     --dry-run|-n) dry_run=1 ;;
     --verbose|-v) verbose=1 ;;
+    --no-prune)   do_prune=0 ;;
+    --watch|-w)   watch=1 ;;
     --help|-h)
-      sed -n '2,33p' "$0" | sed 's/^# \{0,1\}//'
+      sed -n '2,52p' "$0" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     *)
@@ -64,13 +88,14 @@ fi
 if ! command -v workmux >/dev/null 2>&1; then
   print -u2 "workmux not found on PATH"; exit 1
 fi
-if [[ -z "${TMUX:-}" ]] && ! tmux list-sessions >/dev/null 2>&1; then
+if ! tmux list-sessions >/dev/null 2>&1; then
   print -u2 "no tmux server running"; exit 1
 fi
+command -v jq >/dev/null 2>&1 || { print -u2 "jq not found on PATH"; exit 1; }
 
 # Agent foreground commands to match. Override via $AGENT_CMDS (space list).
-# These are matched against tmux's #{pane_current_command}, i.e. the basename
-# of the pane's foreground process, so entries are plain command names.
+# Matched against tmux's #{pane_current_command} (the basename of the pane's
+# foreground process), so entries are plain command names.
 typeset -a agents
 if [[ -n "${AGENT_CMDS:-}" ]]; then
   agents=(${=AGENT_CMDS})
@@ -86,33 +111,109 @@ is_agent() {
   return 1
 }
 
-fixed=0
-skipped=0
+# This tmux server's instance id (the socket path), used both to force
+# register-agent onto the right backend and to scope pruning to our own files.
+instance=$(tmux display-message -p '#{socket_path}')
+agents_dir="$HOME/.local/state/workmux/agents"
 
-# -F output is "pane_id<TAB>pane_current_command"; -a spans all sessions.
-tmux list-panes -a -F '#{pane_id}	#{pane_current_command}' | while IFS=$'\t' read -r pane cmd; do
-  if is_agent "$cmd"; then
-    if (( dry_run )); then
-      print -- "would re-register $cmd @ $pane"
-    else
-      if TMUX_PANE="$pane" workmux register-agent >/dev/null 2>&1; then
-        print -- "re-registered $cmd @ $pane"
-      else
-        print -u2 -- "FAILED to register $cmd @ $pane"
-        continue
+# One reconcile pass. Prints what it did unless --dry-run flips to "would".
+reconcile() {
+  typeset -A pane_cmd
+  typeset pane cmd f finst fpane fkind live_cmd reason
+  typeset pruned=0 registered=0 skipped=0
+
+  # Snapshot of live panes -> foreground command for THIS instance. An
+  # associative map makes liveness + command one lookup, and avoids
+  # display-message -t misreading a bogus pane id as the active pane.
+  while IFS=$'\t' read -r pane cmd; do
+    pane_cmd[$pane]="$cmd"
+  done < <(tmux list-panes -a -F '#{pane_id}	#{pane_current_command}')
+
+  # --- PRUNE phase: drop phantom state files for this instance.
+  if (( do_prune )) && [[ -d "$agents_dir" ]]; then
+    for f in "$agents_dir"/*.json(N); do
+      finst=$(jq -r '.pane_key.instance // empty' "$f" 2>/dev/null) || continue
+      fpane=$(jq -r '.pane_key.pane_id // empty' "$f" 2>/dev/null) || continue
+      [[ -z "$fpane" ]] && continue
+      [[ "$finst" != "$instance" ]] && continue        # only our tmux server
+
+      live_cmd="${pane_cmd[$fpane]:-}"
+      reason=""
+      if [[ -z "$live_cmd" ]]; then
+        reason="pane $fpane no longer exists"
+      elif ! is_agent "$live_cmd"; then
+        reason="pane $fpane now runs '$live_cmd', not an agent"
       fi
-    fi
-    (( ++fixed ))
-  else
-    (( ++skipped ))
-    (( verbose )) && print -- "skip $cmd @ $pane"
-  fi
-done
 
-print -- "---"
-if (( dry_run )); then
-  print -- "dry run: $fixed agent pane(s) would be re-registered, $skipped non-agent pane(s) skipped"
-else
-  print -- "re-registered $fixed agent pane(s), skipped $skipped non-agent pane(s)"
+      if [[ -n "$reason" ]]; then
+        fkind=$(jq -r '.agent_kind // "?"' "$f" 2>/dev/null)
+        if (( dry_run )); then
+          print -- "would prune ${f:t} ($fkind): $reason"
+        else
+          rm -f "$f" && print -- "pruned ${f:t} ($fkind): $reason"
+        fi
+        (( ++pruned ))
+      elif (( verbose )); then
+        print -- "keep ${f:t}: pane $fpane runs '$live_cmd'"
+      fi
+    done
+  fi
+
+  # --- REGISTER phase: ensure every live agent pane has a correct state file.
+  for pane cmd in "${(@kv)pane_cmd}"; do
+    if is_agent "$cmd"; then
+      if (( dry_run )); then
+        print -- "would re-register $cmd @ $pane"
+      else
+        if TMUX_PANE="$pane" workmux register-agent >/dev/null 2>&1; then
+          print -- "re-registered $cmd @ $pane"
+        else
+          print -u2 -- "FAILED to register $cmd @ $pane"
+          continue
+        fi
+      fi
+      (( ++registered ))
+    else
+      (( ++skipped ))
+      (( verbose )) && print -- "skip $cmd @ $pane"
+    fi
+  done
+
+  print -- "---"
+  if (( dry_run )); then
+    print -- "dry run: would prune $pruned phantom file(s), re-register $registered agent pane(s), skip $skipped non-agent pane(s)"
+  else
+    print -- "pruned $pruned phantom file(s), re-registered $registered agent pane(s), skipped $skipped non-agent pane(s)"
+  fi
+}
+
+if (( watch )); then
+  # Daemon mode: reconcile forever on a timer, guarded so only one watcher
+  # runs per tmux instance. Pidfile is keyed on the (sanitized) instance id.
+  interval="${INTERVAL:-15}"
+  run_dir="$HOME/.local/state/workmux/reattach"
+  mkdir -p "$run_dir"
+  pidfile="$run_dir/${instance//[^A-Za-z0-9]/_}.pid"
+
+  if [[ -f "$pidfile" ]] && kill -0 "$(cat "$pidfile" 2>/dev/null)" 2>/dev/null; then
+    print -- "watcher already running (pid $(cat "$pidfile")) for $instance"
+    exit 0
+  fi
+  echo $$ > "$pidfile"
+  trap 'rm -f "$pidfile"' EXIT INT TERM
+
+  print -- "watching $instance every ${interval}s (pid $$)"
+  while :; do
+    # Bail out if the tmux server went away (e.g. shutdown).
+    tmux list-sessions >/dev/null 2>&1 || { print -- "tmux gone, exiting watcher"; break; }
+    reconcile >/dev/null 2>&1 || true
+    sleep "$interval"
+  done
+  exit 0
+fi
+
+# One-shot mode.
+reconcile
+if (( ! dry_run )); then
   print -- "verify with: workmux status --all --json | jq -r '.agents[] | \"\\(.pane_id) \\(.agent_kind) \\(.session) \\(.status)\"'"
 fi

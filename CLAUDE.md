@@ -8,6 +8,7 @@ Personal dotfiles managed without a deployment tool. The directory structure mir
 
 ## Directory Layout
 
+- `codex/` — Durable Codex settings fragment (`config.fragment.toml`), merged into `~/.codex/config.toml` by `bin/.local/bin/codex-config-sync` (run from bootstrap). Not stowed: Codex rewrites its own config at runtime, so only hand-authored keys are tracked.
 - `git/` — Git global ignore rules (`~/.config/git/ignore`)
 - `nvim/` — Neovim config (`~/.config/nvim/`), LazyVim-based
 - `ssh/` — SSH client config (`~/.ssh/config`), GitHub only (work entries excluded)

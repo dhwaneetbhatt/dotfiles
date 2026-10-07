@@ -87,6 +87,14 @@ done
 
 run git config --global core.excludesfile "$HOME/.config/git/ignore"
 
+# Merge durable Codex settings (tracked in codex/.codex/config.fragment.toml)
+# into ~/.codex/config.toml. Codex owns and rewrites that file at runtime, so
+# it is deliberately NOT stowed; this reconciles only our hand-authored keys
+# and is a no-op when already in sync. Guarded on python3 (used by the script).
+if command -v python3 >/dev/null 2>&1; then
+  run "$repo_root/bin/.local/bin/codex-config-sync"
+fi
+
 clone_if_missing() {
   local repository=$1 destination=$2
   if [[ ! -d "$destination/.git" ]]; then
