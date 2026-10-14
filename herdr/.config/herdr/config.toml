@@ -4,15 +4,16 @@ onboarding = false
 prefix = "ctrl+a"
 previous_tab = ["prefix+p", "shift+left"]
 next_tab = ["prefix+n", "shift+right"]
-move_tab_previous = "prefix+shift+comma"
-move_tab_next = "prefix+shift+period"
 split_vertical = "prefix+v"
 split_horizontal = "prefix+minus"
 
-# Worktrees. new_worktree stays on its default prefix+shift+g.
-# open_worktree mirrors the tmux worktree picker (prefix then a). close_workspace
-# is moved off its default prefix+shift+d so remove_worktree can take that chord;
-# remove_worktree runs `git worktree remove` and is double-confirmed by herdr.
+# Worktrees. new_worktree stays on its default prefix+shift+g. open_worktree uses
+# prefix+a to mirror the tmux worktree picker. close_workspace is moved off its
+# default prefix+shift+d so remove_worktree can take that chord; remove_worktree
+# runs `git worktree remove` and is double-confirmed by herdr.
+#
+# Note: shift+<letter> chords require pressing shift together with the letter
+# (herdr sees them as separate key events otherwise).
 open_worktree = "prefix+a"
 remove_worktree = "prefix+shift+d"
 close_workspace = "prefix+shift+q"

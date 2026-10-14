@@ -31,8 +31,10 @@ ZSH_THEME="powerlevel10k/powerlevel10k"
 DISABLE_UNTRACKED_FILES_DIRTY="true"
 COMPLETION_WAITING_DOTS="true"
 
-# Only include internal OMZ plugins here
-plugins=(git tmux) 
+# Only include internal OMZ plugins here. (tmux plugin removed: herdr is the
+# multiplexer now, so the omz tmux aliases/autostart are redundant and can nest
+# tmux inside herdr panes.)
+plugins=(git)
 
 # Load OMZ ONCE
 source $ZSH/oh-my-zsh.sh

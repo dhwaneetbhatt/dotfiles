@@ -11,7 +11,7 @@ Reload after edits with `herdr server reload-config` — no restart needed.
 | Keys | Action |
 |---|---|
 | `prefix shift+g` | **New worktree** — create branch + checkout, open as grouped workspace |
-| `prefix a` | **Open worktree…** — pick/switch to an existing worktree (tmux picker chord) |
+| `prefix a` | **Open worktree** — pick/switch to an existing worktree (tmux-style picker chord) |
 | `prefix shift+d` | **Remove worktree** — `git worktree remove`, double-confirmed, branch kept |
 
 Worktrees land under `~/workspace/<repo>/<branch-slug>` (`[worktrees] directory`).
@@ -50,7 +50,6 @@ In the picker: `j`/`k` move, `enter` jump, `space` expand/collapse,
 | `prefix p` / `shift+left` | Previous tab |
 | `prefix n` / `shift+right` | Next tab |
 | `prefix 1` … `9` | Switch to tab 1–9 |
-| `prefix shift+,` / `shift+.` | Move tab left / right |
 | `prefix shift+x` | Close tab |
 
 ## Panes
@@ -84,9 +83,15 @@ In the picker: `j`/`k` move, `enter` jump, `space` expand/collapse,
 
 ## Notes
 
-- **Arrow hierarchy:** unshifted/`shift`+arrows move **tabs**; `shift`+arrows move
-  **workspaces**.
-- **Removed tmux-style split aliases:** `prefix shift+5` (was split vertical) and
-  `prefix shift+quote` (was split horizontal) were dropped. `prefix shift+5` now
-  belongs to `switch_workspace` 5; use `prefix v` / `prefix -` for splits.
+- **Arrow hierarchy:** `shift`+arrows move **workspaces**; the plain-arrow /
+  `shift`+arrow aliases on `previous_tab`/`next_tab` move **tabs**.
+- **Shift-letter chords need a together-press:** herdr receives `shift` and the
+  letter as separate key events, so a slow press drops the shift and e.g.
+  `prefix shift+g` falls back to `prefix g`. Press shift+letter together and
+  they work. `shift`+arrow and `shift`+digit chords carry the modifier in their
+  escape sequence and are unaffected.
+- **CLI fallback for worktrees** (works regardless of keybinds):
+  `herdr worktree create --branch <name> [--base <ref>] [--path <dir>]`,
+  `herdr worktree open --branch <name>`, `herdr worktree list`,
+  `herdr worktree remove`.
 - Last `herdr server reload-config` reported `status: applied` with no diagnostics.
