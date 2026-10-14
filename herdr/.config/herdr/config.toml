@@ -1,0 +1,26 @@
+onboarding = false
+
+[keys]
+prefix = "ctrl+a"
+previous_tab = ["prefix+p", "shift+left"]
+next_tab = ["prefix+n", "shift+right"]
+move_tab_previous = "prefix+shift+comma"
+move_tab_next = "prefix+shift+period"
+split_vertical = ["prefix+v", "prefix+shift+5"]
+split_horizontal = ["prefix+minus", "prefix+shift+quote"]
+
+[ui]
+prompt_new_tab_name = false
+
+[worktrees]
+directory = "~/workspace"
+
+[ui.toast]
+delivery = "herdr"
+
+[ui.sound]
+enabled = true
+
+[theme]
+name = "catppuccin-latte"
+auto_switch = false

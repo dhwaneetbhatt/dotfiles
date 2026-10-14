@@ -112,6 +112,32 @@ if [[ -x "$HOME/.tmux/plugins/tpm/bin/install_plugins" ]]; then
   run "$HOME/.tmux/plugins/tpm/bin/install_plugins"
 fi
 
+# Herdr plugins. Install/enabled state is global per-user (not per-session),
+# so a one-time install here is reproducible. Herdr reads no declarative plugin
+# list of its own, so it lives here, pinned to tags like the rest of the repo.
+# Format: "owner/repo[/subdir]@ref=plugin.id" where plugin.id is the manifest
+# ID shown by `herdr plugin list` (need not match the repo name). The guard
+# skips anything already installed. --yes skips the interactive confirmation
+# for unattended runs; only add a plugin here after reviewing its source at the
+# pinned tag, since Herdr plugins run unsandboxed as your user. Plugins are
+# built from source, so the required toolchain must be present (the asdf loop
+# below installs Go, which herdr-auto-title needs).
+if command -v herdr >/dev/null 2>&1; then
+  herdr_plugins=(
+    "kryptamine/herdr-auto-title@v0.13.2=herdr.auto-title"
+  )
+  installed_herdr_plugins="$(herdr plugin list 2>/dev/null || true)"
+  for entry in "${herdr_plugins[@]}"; do
+    spec="${entry%%=*}"       # owner/repo[/subdir]@ref
+    plugin_id="${entry##*=}"  # manifest plugin id
+    source="${spec%@*}"       # owner/repo[/subdir]
+    ref="${spec##*@}"         # git tag/ref
+    if ! printf '%s\n' "$installed_herdr_plugins" | command grep -qF "$plugin_id"; then
+      run herdr plugin install "$source" --ref "$ref" --yes
+    fi
+  done
+fi
+
 for plugin in bun golang java maven nodejs uv yarn; do
   if ! asdf plugin list | command grep -qx "$plugin"; then
     run asdf plugin add "$plugin"
