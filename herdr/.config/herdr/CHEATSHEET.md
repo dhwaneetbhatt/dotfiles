@@ -27,7 +27,6 @@ Closing a worktree workspace does **not** delete the checkout or branch — only
 | `prefix shift+w` | Rename workspace |
 | `prefix shift+q` | Close workspace *(moved here from the default shift+d)* |
 | `prefix shift+left` / `shift+right` | Previous / next workspace |
-| `prefix shift+1` … `shift+9` | Jump to workspace 1–9 |
 
 ## Agents
 

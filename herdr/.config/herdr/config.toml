@@ -21,7 +21,6 @@ close_workspace = "prefix+shift+q"
 # Workspace navigation (shift+arrows = workspaces; plain arrows/shift above = tabs).
 previous_workspace = "prefix+shift+left"
 next_workspace = "prefix+shift+right"
-switch_workspace = "prefix+shift+1..9"
 last_pane = "prefix+semicolon"
 
 # Agent navigation. goto picker stays on the default prefix+g; these add cycling
