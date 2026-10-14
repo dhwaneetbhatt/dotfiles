@@ -10,6 +10,7 @@ Personal dotfiles managed without a deployment tool. The directory structure mir
 
 - `codex/` — Durable Codex settings fragment (`config.fragment.toml`), merged into `~/.codex/config.toml` by `bin/.local/bin/codex-config-sync` (run from bootstrap). Not stowed: Codex rewrites its own config at runtime, so only hand-authored keys are tracked.
 - `git/` — Git global ignore rules (`~/.config/git/ignore`)
+- `ghostty/` — Ghostty terminal config (`~/.config/ghostty/config`). On macOS Ghostty loads XDG files first, then `~/Library/Application Support/com.mitchellh.ghostty/config` AFTER them, so keys in Application Support override this tracked file — keep settings here and don't duplicate them there. Sets `shell-integration-features = no-title` so the herdr title-sync plugin owns the tab title.
 - `herdr/` — Herdr terminal workspace config (`~/.config/herdr/config.toml`). Plugins are not declared in `config.toml`; Herdr has no declarative plugin list, so they are installed imperatively via `herdr plugin install`. For reproducibility that install is scripted in `bootstrap` (see "Herdr Plugins" below).
 - `nvim/` — Neovim config (`~/.config/nvim/`), LazyVim-based
 - `ssh/` — SSH client config (`~/.ssh/config`), GitHub only (work entries excluded)
@@ -47,7 +48,9 @@ Herdr plugins are installed via a CLI (`herdr plugin install owner/repo`), with 
 - **Built from source:** plugins build on install, so the required toolchain must be present. The asdf loop installs Go, which `herdr-auto-title` (Go 1.24+) needs.
 - **Config:** a plugin's own settings live in its config dir (`herdr plugin config-dir <id>`), separate from the managed checkout. Keybindings for plugin actions and UI tokens for plugin output go in `herdr/.config/herdr/config.toml`.
 
-Currently tracked: `kryptamine/herdr-auto-title` — auto-names tabs/panes after the running process, directory, git branch, and agent sessions.
+Currently tracked:
+- `kryptamine/herdr-auto-title` — auto-names Herdr's internal tabs/panes and sidebar after the running process, directory, git branch, and agent sessions. Does NOT touch the outer terminal title.
+- `rjyo/herdr-window-title-sync` — syncs the OUTER terminal (Ghostty) window/tab title to the focused workspace/tab/agent, like `tmux set-titles`. Event-driven, so the Ghostty tab stays current instead of freezing at the workspace's creation directory. Needs Bun (installed by the asdf loop) and pairs with Ghostty's `shell-integration-features = no-title`. No release tags upstream, so it is pinned to a commit SHA.
 
 ## Tmux
 

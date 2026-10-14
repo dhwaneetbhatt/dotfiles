@@ -1,0 +1,21 @@
+# Ghostty config, stowed to ~/.config/ghostty/config.
+#
+# NOTE ON PRECEDENCE (macOS): Ghostty loads XDG files first, then the
+# macOS-specific file at
+#   ~/Library/Application Support/com.mitchellh.ghostty/config
+# AFTER them, so any key set there overrides this file. Keep Ghostty settings
+# here (tracked) and avoid duplicating them in Application Support, or that
+# copy will win. See https://ghostty.org/docs/config
+
+# --- Appearance (migrated from the Application Support config) ---
+theme = dark:Adwaita Dark,light:Adwaita
+font-family = CommitMono
+font-size = 15
+minimum-contrast = 3
+
+# --- Title handling ---
+# Stop Ghostty's shell integration from setting the tab/window title from the
+# running process, so the herdr `rjyo.window-title-sync` plugin owns it and the
+# tab title tracks the focused herdr workspace/tab/agent instead of going stale
+# at the directory the workspace was created in.
+shell-integration-features = no-title

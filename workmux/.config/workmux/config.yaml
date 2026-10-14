@@ -18,3 +18,11 @@ panes:
     command: nvim .
     split: vertical
 nerdfont: true
+
+# Pin the agent sidebar to a STABLE order. workmux defaults to sorting rows by
+# "most recently updated first" (sidebar.sort: recency), so every status update
+# an agent emits reshuffles the list — maddening when several agents are busy.
+# "window" keeps the list in tmux window order, so each agent stays put.
+# Runtime 's' key still cycles modes; this just sets the default.
+sidebar:
+  sort: window
