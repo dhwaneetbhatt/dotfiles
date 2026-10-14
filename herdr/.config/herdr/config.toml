@@ -7,7 +7,7 @@ next_tab = ["prefix+n", "shift+right"]
 move_tab_previous = "prefix+shift+comma"
 move_tab_next = "prefix+shift+period"
 split_vertical = "prefix+v"
-split_horizontal = ["prefix+minus", "prefix+shift+quote"]
+split_horizontal = "prefix+minus"
 
 # Worktrees. new_worktree stays on its default prefix+shift+g.
 # open_worktree mirrors the tmux worktree picker (prefix then a). close_workspace
