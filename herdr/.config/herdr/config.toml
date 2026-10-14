@@ -6,8 +6,37 @@ previous_tab = ["prefix+p", "shift+left"]
 next_tab = ["prefix+n", "shift+right"]
 move_tab_previous = "prefix+shift+comma"
 move_tab_next = "prefix+shift+period"
-split_vertical = ["prefix+v", "prefix+shift+5"]
+split_vertical = "prefix+v"
 split_horizontal = ["prefix+minus", "prefix+shift+quote"]
+
+# Worktrees. new_worktree stays on its default prefix+shift+g.
+# open_worktree mirrors the tmux worktree picker (prefix then a). close_workspace
+# is moved off its default prefix+shift+d so remove_worktree can take that chord;
+# remove_worktree runs `git worktree remove` and is double-confirmed by herdr.
+open_worktree = "prefix+a"
+remove_worktree = "prefix+shift+d"
+close_workspace = "prefix+shift+q"
+
+# Workspace navigation (shift+arrows = workspaces; plain arrows/shift above = tabs).
+previous_workspace = "prefix+shift+left"
+next_workspace = "prefix+shift+right"
+switch_workspace = "prefix+shift+1..9"
+last_pane = "prefix+semicolon"
+
+# Agent navigation. goto picker stays on the default prefix+g; these add cycling
+# and direct jump. a/z = prev/next ends of the list.
+previous_agent = "prefix+shift+a"
+next_agent = "prefix+shift+z"
+focus_agent = "prefix+alt+1..9"
+
+# lazygit in a temporary pane (mirrors the tmux prefix+alt+g bind; shifted-l here
+# since prefix+l alone is focus-pane-right).
+[[keys.command]]
+key = "prefix+shift+l"
+type = "pane"
+command = "lazygit"
+description = "run lazygit"
+
 
 [ui]
 prompt_new_tab_name = false
