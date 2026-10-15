@@ -6,17 +6,22 @@ Press **`Ctrl+a`** then **`?`** anytime for the live in-app help.
 Config: `herdr/.config/herdr/config.toml` (stowed to `~/.config/herdr/config.toml`).
 Reload after edits with `herdr server reload-config` — no restart needed.
 
-## Worktrees
+## Worktrees (via worktrunk)
+
+Worktrees are managed by **worktrunk** (`wt`) through the herdr-worktrunk plugin,
+not herdr's built-ins — worktrunk runs lifecycle hooks on create (copy gitignored
+files, project init) that the built-ins lack. An fzf picker opens; press Enter on
+a match to switch, or type a new name + Enter to create.
 
 | Keys | Action |
 |---|---|
-| `prefix shift+g` | **New worktree** — create branch + checkout, open as grouped workspace |
-| `prefix a` | **Open worktree** — pick/switch to an existing worktree (tmux-style picker chord) |
-| `prefix shift+d` | **Remove worktree** — `git worktree remove`, double-confirmed, branch kept |
+| `prefix shift+g` | **Switch / create worktree** from the default branch (picker) |
+| `prefix a` | **Switch / create worktree** from the current branch |
+| `prefix shift+d` | **Remove** a worktree (worktrunk confirms, gates unmerged/untracked) |
+| `prefix shift+m` | **Merge** a worktree into its target, then remove it |
 
-Worktrees land under `~/workspace/<repo>/<branch-slug>` (`[worktrees] directory`).
-Closing a worktree workspace does **not** delete the checkout or branch — only
-`prefix shift+d` / "Delete worktree checkout…" does.
+Hooks live in each repo's `.config/wt.toml` (`pre-start` = copy env/secrets + init).
+First use in a repo needs a one-time `wt config approvals add` to approve its hooks.
 
 ## Workspaces
 

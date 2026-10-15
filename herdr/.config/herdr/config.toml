@@ -7,15 +7,14 @@ next_tab = ["prefix+n", "shift+right"]
 split_vertical = "prefix+v"
 split_horizontal = "prefix+minus"
 
-# Worktrees. new_worktree stays on its default prefix+shift+g. open_worktree uses
-# prefix+a to mirror the tmux worktree picker. close_workspace is moved off its
-# default prefix+shift+d so remove_worktree can take that chord; remove_worktree
-# runs `git worktree remove` and is double-confirmed by herdr.
+# Worktrees are managed by the herdr-worktrunk plugin (worktrunk's `wt`), not
+# herdr's built-in worktree commands, because worktrunk runs lifecycle hooks on
+# create (copy gitignored files, project init) that the built-ins lack. The
+# plugin_action binds below override the built-ins. close_workspace stays here,
+# moved off its default prefix+shift+d so the worktree remove key can use shift+d.
 #
 # Note: shift+<letter> chords require pressing shift together with the letter
 # (herdr sees them as separate key events otherwise).
-open_worktree = "prefix+a"
-remove_worktree = "prefix+shift+d"
 close_workspace = "prefix+shift+q"
 
 # Workspace navigation (shift+arrows = workspaces; plain arrows/shift above = tabs).
@@ -28,6 +27,37 @@ last_pane = "prefix+semicolon"
 previous_agent = "prefix+shift+a"
 next_agent = "prefix+shift+z"
 focus_agent = "prefix+alt+1..9"
+
+# --- Worktrunk worktree management (herdr-worktrunk plugin) ---
+# worktrunk.open: fzf picker to switch to an existing worktree OR type a new name
+# to create it from the default branch (runs worktrunk's hooks). Overrides herdr's
+# built-in new_worktree on prefix+shift+g.
+[[keys.command]]
+key = "prefix+shift+g"
+type = "plugin_action"
+command = "worktrunk.open"
+description = "worktree: switch / create (default base)"
+
+# Create from the CURRENT branch instead of the default base.
+[[keys.command]]
+key = "prefix+a"
+type = "plugin_action"
+command = "worktrunk.open-current"
+description = "worktree: switch / create (current base)"
+
+# Remove a worktree (worktrunk prompts + gates unmerged/untracked itself).
+[[keys.command]]
+key = "prefix+shift+d"
+type = "plugin_action"
+command = "worktrunk.remove"
+description = "worktree: remove"
+
+# Merge a worktree into the target branch, then remove it.
+[[keys.command]]
+key = "prefix+shift+m"
+type = "plugin_action"
+command = "worktrunk.merge"
+description = "worktree: merge into target"
 
 # lazygit in a temporary pane (mirrors the tmux prefix+alt+g bind; shifted-l here
 # since prefix+l alone is focus-pane-right).

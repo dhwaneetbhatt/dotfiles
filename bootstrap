@@ -77,7 +77,7 @@ fi
 run mkdir -p "$HOME/.config" "$HOME/.local/bin" "$HOME/.ssh"
 run chmod 700 "$HOME/.ssh"
 
-for package in asdf bin ghostty git nvim ssh tmux vim workmux zsh; do
+for package in asdf bin ghostty git nvim ssh tmux vim workmux worktrunk zsh; do
   if [[ "$package" == zsh ]]; then
     run stow --restow --target "$HOME" --dir "$repo_root" --ignore='^\.zshrc\.local$' "$package"
   else
@@ -126,6 +126,7 @@ if command -v herdr >/dev/null 2>&1; then
   herdr_plugins=(
     "kryptamine/herdr-auto-title@v0.13.2=herdr.auto-title"
     "rjyo/herdr-window-title-sync@b07f1140b7308d66487b2f4be546c0c7db065569=rjyo.window-title-sync"
+    "devashish2203/herdr-worktrunk@v0.7.0=worktrunk"
   )
   installed_herdr_plugins="$(herdr plugin list 2>/dev/null || true)"
   for entry in "${herdr_plugins[@]}"; do

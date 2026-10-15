@@ -1,0 +1,16 @@
+# Worktrunk user config (stowed to ~/.config/worktrunk/config.toml).
+#
+# This file is personal/user-scoped (worktree path template, LLM commit config).
+# Per-repo lifecycle hooks live in each repo's own .config/wt.toml instead.
+#
+# NOTE: worktrunk may rewrite this file during explicit `wt config ...` commands
+# (e.g. first-run LLM-commit setup). It does not continuously own the file, so
+# stowing it is safe; if `wt config` ever rewrites it, re-stow or fold the change
+# back into this tracked copy.
+
+# Create worktrees NESTED inside each repo at <repo>/.worktrees/<branch>, rather
+# than worktrunk's default sibling layout (<repo>.<branch>). Nesting keeps a
+# worktree inside the project directory so Claude Code's permission scope — tied
+# to the project dir — still covers it. Matches the previous workmux layout
+# (worktree_dir: .worktrees).
+worktree-path = "{{ repo_path }}/.worktrees/{{ branch | sanitize }}"

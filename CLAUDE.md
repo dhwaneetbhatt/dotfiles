@@ -51,6 +51,7 @@ Herdr plugins are installed via a CLI (`herdr plugin install owner/repo`), with 
 Currently tracked:
 - `kryptamine/herdr-auto-title` — auto-names Herdr's internal tabs/panes and sidebar after the running process, directory, git branch, and agent sessions. Does NOT touch the outer terminal title.
 - `rjyo/herdr-window-title-sync` — syncs the OUTER terminal (Ghostty) window/tab title to the focused workspace/tab/agent, like `tmux set-titles`. Event-driven, so the Ghostty tab stays current instead of freezing at the workspace's creation directory. Needs Bun (installed by the asdf loop) and pairs with Ghostty's `shell-integration-features = no-title`. No release tags upstream, so it is pinned to a commit SHA.
+- `devashish2203/herdr-worktrunk` — drives worktrunk (`wt`, in the Brewfile) for worktree switch/create/remove/merge via an fzf picker, so worktrunk's lifecycle hooks run on create. Bound over herdr's built-in worktree keys (prefix+shift+g etc.). Per-repo hooks live in `<repo>/.config/wt.toml` and need a one-time `wt config approvals add`. Needs fzf + jq.
 
 ## Tmux
 
