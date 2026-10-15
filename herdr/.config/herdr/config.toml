@@ -4,6 +4,8 @@ onboarding = false
 prefix = "ctrl+a"
 previous_tab = ["prefix+p", "shift+left"]
 next_tab = ["prefix+n", "shift+right"]
+move_tab_previous = "prefix+shift+comma"
+move_tab_next = "prefix+shift+period"
 split_vertical = "prefix+v"
 split_horizontal = "prefix+minus"
 

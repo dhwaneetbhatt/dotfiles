@@ -54,6 +54,7 @@ In the picker: `j`/`k` move, `enter` jump, `space` expand/collapse,
 | `prefix p` / `shift+left` | Previous tab |
 | `prefix n` / `shift+right` | Next tab |
 | `prefix 1` … `9` | Switch to tab 1–9 |
+| `prefix shift+,` / `shift+.` | Move tab toward front / back (reorder, like tmux `<`/`>`) |
 | `prefix shift+x` | Close tab |
 
 ## Panes
