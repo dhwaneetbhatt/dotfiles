@@ -107,9 +107,6 @@ autoload -U add-zsh-hook
 alias zshconfig="nvim ~/.zshrc"
 alias reload="source ~/.zshrc"
 
-# Pick a worktree (workmux) and switch to (or create) its window
-alias wg='workmux-picker'
-
 # Launch Kiro CLI in v3 mode (opt-in flag on the 2.22.0 binary)
 alias kiro='kiro-cli --v3'
 

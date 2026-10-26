@@ -11,6 +11,5 @@
 # Create worktrees NESTED inside each repo at <repo>/.worktrees/<branch>, rather
 # than worktrunk's default sibling layout (<repo>.<branch>). Nesting keeps a
 # worktree inside the project directory so Claude Code's permission scope — tied
-# to the project dir — still covers it. Matches the previous workmux layout
-# (worktree_dir: .worktrees).
+# to the project dir — still covers it.
 worktree-path = "{{ repo_path }}/.worktrees/{{ branch | sanitize }}"

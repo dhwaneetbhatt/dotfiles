@@ -1,6 +1,5 @@
 tap "dhwaneetbhatt/tap"
 tap "homebrew/cask-fonts"
-tap "raine/workmux"
 
 brew "asdf"
 brew "awscli"
@@ -24,7 +23,6 @@ brew "tmux"
 brew "tree"
 brew "unzip"
 brew "wget"
-brew "workmux"
 brew "worktrunk"
 
 cask "font-jetbrains-mono-nerd-font"

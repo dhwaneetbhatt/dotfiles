@@ -8,12 +8,3 @@
 # idempotently merges the settings below into ~/.codex/config.toml, and
 # bootstrap runs it. Edit durable Codex settings HERE, then rerun bootstrap
 # (or the sync script) to apply them.
-
-# Keep tmux pane identity out of the environment Codex passes to the shell
-# commands it spawns -- notably the workmux status hooks (register-agent /
-# set-window-status). Codex's shared, long-lived app-server daemon captures
-# whatever TMUX_PANE/TMUX it was first launched with; without this exclude,
-# every session's hooks inherit that stale pane id and report status to the
-# wrong tmux pane, producing phantom agents in the workmux sidebar.
-[shell_environment_policy]
-exclude = ["TMUX_PANE", "TMUX"]

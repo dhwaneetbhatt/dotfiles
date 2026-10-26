@@ -73,11 +73,12 @@ description = "run lazygit"
 [ui]
 prompt_new_tab_name = false
 
+status_indicators = "dots"
 [worktrees]
 directory = "~/workspace"
 
 [ui.toast]
-delivery = "herdr"
+delivery = "terminal"
 
 [ui.sound]
 enabled = true

@@ -77,7 +77,7 @@ fi
 run mkdir -p "$HOME/.config" "$HOME/.local/bin" "$HOME/.ssh"
 run chmod 700 "$HOME/.ssh"
 
-for package in asdf bin ghostty git nvim ssh tmux vim workmux worktrunk zsh; do
+for package in asdf bin ghostty git nvim ssh tmux vim worktrunk zsh; do
   if [[ "$package" == zsh ]]; then
     run stow --restow --target "$HOME" --dir "$repo_root" --ignore='^\.zshrc\.local$' "$package"
   else
