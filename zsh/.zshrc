@@ -107,8 +107,7 @@ autoload -U add-zsh-hook
 alias zshconfig="nvim ~/.zshrc"
 alias reload="source ~/.zshrc"
 
-# Launch Kiro CLI in v3 mode (opt-in flag on the 2.22.0 binary)
-alias kiro='kiro-cli --v3'
+alias kiro='kiro-cli'
 
 git() {
   if command -v git-sprout >/dev/null 2>&1 && [ "${1:-}" = worktree ] && [ "${2:-}" = add ]; then
@@ -125,3 +124,5 @@ git() {
 # Load local secrets (gitignored)
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
 [ -f ~/.claude-env ] && source ~/.claude-env
+# Added by Kiro CLI
+case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) export PATH="${PATH:+$PATH:}$HOME/.local/bin" ;; esac
